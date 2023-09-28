@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Content</title>
+</head>
+<body>
+    <div id="content"></div>
+    <script>
+        var contentDiv = document.getElementById("content");
+
+        // Fetch content from the /content endpoint
+        fetch("/content")
+            .then(response => {
+                const reader = response.body.getReader();
+                return new ReadableStream({
+                    async start(controller) {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) {
+                                break;
+                            }
+                            controller.enqueue(value);
+                            const text = new TextDecoder().decode(value);
+                            contentDiv.innerHTML += text + '<br>';
+                        }
+                        controller.close();
+                    },
+                });
+            })
+            .then(stream => new Response(stream))
+            .catch(error => {
+                console.error('Error fetching content:', error);
+            });
+    </script>
+</body>
+</html>
